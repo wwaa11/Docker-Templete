@@ -12,6 +12,10 @@ down:
 build:
 	docker compose -f docker-compose.dev.yml up -d --build
 
+# Build and start the project in production mode
+prod
+	docker compose up -d --build
+
 # Follow backend logs
 logs:
 	docker compose logs -f backend
