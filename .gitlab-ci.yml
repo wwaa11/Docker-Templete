@@ -1,0 +1,239 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/SAST-IaC.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
+
+stages:
+  - validate
+  - build-frontend
+  - build-backend
+  - test
+  - sonarqube
+
+variables:
+  GIT_DEPTH: "0"
+
+  # Docker-in-Docker
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+
+  # Build/scan image tag
+  IMAGE_TAG: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  CS_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  PUSH_LATEST_ON_DEFAULT: "true"
+  PUSH_GIT_TAG_AS_IMAGE_TAG: "true"
+  IMAGE_VERSION_TAG: ""
+
+  SONAR_USER_HOME: "$CI_PROJECT_DIR/.sonar"
+
+  # Reduce security scan noise
+  SAST_EXCLUDED_PATHS: "vendor,node_modules,dist,build,.cache,.sonar,.git"
+  SECRET_DETECTION_EXCLUDED_PATHS: "vendor,node_modules,dist,build,.cache,.sonar,.git"
+
+  # Optional compose file validation
+  STACK_COMPOSE_FILE: ""
+
+  # Certificate options for private registry/internal GitLab
+  # Prefer File-type variables in GitLab UI.
+  REGISTRY_CA_CERT: ""
+  REGISTRY_CA_CERT_FILE: "/certs/praram9-ca.crt"
+  REGISTRY_HOST: ""
+
+  # Optional dind network tuning
+  DOCKER_BIP: "10.201.0.1/24"
+  DOCKER_DEFAULT_ADDRESS_POOL: "base=10.202.0.0/16,size=24"
+
+cache:
+  paths:
+    - .sonar/cache/
+
+.default_rules: &default_rules
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+
+validate-stack-compose:
+  stage: validate
+  image: docker:27.1.2
+  script:
+    - |
+      if [ -n "$STACK_COMPOSE_FILE" ]; then
+        FILE="$STACK_COMPOSE_FILE"
+      elif [ -f "docker-stack.yml" ]; then
+        FILE="docker-stack.yml"
+      elif [ -f "docker-compose.yml" ]; then
+        FILE="docker-compose.yml"
+      else
+        echo "Skip: no compose/stack file found"
+        exit 0
+      fi
+      echo "Validating $FILE"
+      docker stack config -c "$FILE" >/dev/null
+  rules:
+    - if: '$STACK_COMPOSE_FILE != ""'
+    - exists:
+        - docker-stack.yml
+        - docker-compose.yml
+
+# Docker-in-Docker base with optional CA trust injection.
+.dind-with-ca:
+  image: docker:27.1.2
+  services:
+    - name: docker:27.1.2-dind
+      alias: docker
+      command:
+        - /bin/sh
+        - -lc
+        - |
+          set -e
+          REGISTRY_CERTS_DIR="${REGISTRY_HOST:-$CI_REGISTRY}"
+
+          # Keep previous behavior: prefer mounted CA file in /certs first.
+          if [ -f "/certs/praram9-ca.crt" ]; then
+            mkdir -p "/etc/docker/certs.d/$REGISTRY_CERTS_DIR"
+            cp "/certs/praram9-ca.crt" "/etc/docker/certs.d/$REGISTRY_CERTS_DIR/ca.crt"
+          elif [ -n "$REGISTRY_CA_CERT_FILE" ] && [ -f "$REGISTRY_CA_CERT_FILE" ]; then
+            mkdir -p "/etc/docker/certs.d/$REGISTRY_CERTS_DIR"
+            cp "$REGISTRY_CA_CERT_FILE" "/etc/docker/certs.d/$REGISTRY_CERTS_DIR/ca.crt"
+          elif [ -n "$REGISTRY_CA_CERT" ] && [ -f "$REGISTRY_CA_CERT" ]; then
+            mkdir -p "/etc/docker/certs.d/$REGISTRY_CERTS_DIR"
+            cp "$REGISTRY_CA_CERT" "/etc/docker/certs.d/$REGISTRY_CERTS_DIR/ca.crt"
+          elif [ -n "$REGISTRY_CA_CERT" ]; then
+            mkdir -p "/etc/docker/certs.d/$REGISTRY_CERTS_DIR"
+            echo "$REGISTRY_CA_CERT" > "/etc/docker/certs.d/$REGISTRY_CERTS_DIR/ca.crt"
+          fi
+
+          DOCKER_ARGS="--host=tcp://0.0.0.0:2375"
+          if [ -n "$DOCKER_BIP" ]; then
+            DOCKER_ARGS="$DOCKER_ARGS --bip=$DOCKER_BIP"
+          fi
+          if [ -n "$DOCKER_DEFAULT_ADDRESS_POOL" ]; then
+            DOCKER_ARGS="$DOCKER_ARGS --default-address-pool=$DOCKER_DEFAULT_ADDRESS_POOL"
+          fi
+          exec dockerd $DOCKER_ARGS
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+.build-template:
+  extends: .dind-with-ca
+  before_script:
+    - |
+      for i in $(seq 1 60); do
+        docker info >/dev/null 2>&1 && break
+        echo "Waiting for Docker daemon..."
+        sleep 1
+      done
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - cd ${DOCKER_DIR}
+    - LATEST_IMAGE="${CI_REGISTRY_IMAGE}/${DOCKER_DIR}:latest"
+    - |
+      if docker pull "$IMAGE_TAG" >/dev/null 2>&1; then
+        echo "Image $IMAGE_TAG already exists in registry. Skipping build."
+      else
+        echo "Image $IMAGE_TAG not found. Pulling latest for cache..."
+        docker pull "$LATEST_IMAGE" || true
+        echo "Building $IMAGE_TAG..."
+        docker build --cache-from "$LATEST_IMAGE" -t "$IMAGE_TAG" .
+        docker push "$IMAGE_TAG"
+      fi
+    - |
+      VERSION_TAG="${IMAGE_VERSION_TAG:-$CI_COMMIT_TAG}"
+      echo "Resolved VERSION_TAG: ${VERSION_TAG:-<empty>}"
+      if [ -n "$VERSION_TAG" ] && [ "$PUSH_GIT_TAG_AS_IMAGE_TAG" = "true" ]; then
+        if ! echo "$VERSION_TAG" | grep -Eq '^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$'; then
+          echo "Invalid Docker image tag: $VERSION_TAG"
+          exit 1
+        fi
+        if docker pull "${CI_REGISTRY_IMAGE}/${DOCKER_DIR}:$VERSION_TAG" >/dev/null 2>&1; then
+           echo "Version tag $VERSION_TAG already exists. Skipping."
+        else
+           docker tag "$IMAGE_TAG" "${CI_REGISTRY_IMAGE}/${DOCKER_DIR}:$VERSION_TAG"
+           docker push "${CI_REGISTRY_IMAGE}/${DOCKER_DIR}:$VERSION_TAG"
+        fi
+      else
+        echo "Skip version tag push (PUSH_GIT_TAG_AS_IMAGE_TAG=$PUSH_GIT_TAG_AS_IMAGE_TAG, CI_COMMIT_TAG=${CI_COMMIT_TAG:-<empty>}, IMAGE_VERSION_TAG=${IMAGE_VERSION_TAG:-<empty>})"
+      fi
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ] && [ "$PUSH_LATEST_ON_DEFAULT" = "true" ]; then
+        docker tag "$IMAGE_TAG" "${CI_REGISTRY_IMAGE}/${DOCKER_DIR}:latest"
+        docker push "${CI_REGISTRY_IMAGE}/${DOCKER_DIR}:latest"
+      fi
+
+build-frontend:
+  stage: build-frontend
+  extends: .build-template
+  variables:
+    DOCKER_DIR: "frontend"
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA"
+  <<: *default_rules
+
+build-backend:
+  stage: build-backend
+  extends: .build-template
+  variables:
+    DOCKER_DIR: "backend"
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA"
+  <<: *default_rules
+
+# Optional per-project unit tests should be added in this stage.
+# Example:
+# unit-test:
+#   stage: test
+#   image: python:3.12
+#   script:
+#     - pip install -r requirements.txt
+#     - pytest
+
+sonarqube-scan:
+  stage: sonarqube
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [ "" ]
+  script:
+    - sonar-scanner --version
+    - test -n "$SONAR_HOST_URL"
+    - test -n "$SONAR_TOKEN"
+    - chmod -R a+rX "$CI_PROJECT_DIR" || true
+    - |
+      sonar-scanner \
+        -Dsonar.host.url="$SONAR_HOST_URL" \
+        -Dsonar.token="$SONAR_TOKEN" \
+        -Dsonar.projectKey="$CI_PROJECT_PATH_SLUG" \
+        -Dsonar.projectName="$CI_PROJECT_PATH" \
+        -Dsonar.projectVersion="$CI_COMMIT_SHORT_SHA" \
+        -Dsonar.sources="backend/app,frontend/src" \
+        -Dsonar.exclusions="**/node_modules/**,**/venv/**,**/dist/**,**/*.spec.ts,**/*.test.ts" \
+        -Dsonar.python.version="3.11" \
+        -Dsonar.qualitygate.wait=true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $SONAR_HOST_URL != "" && $SONAR_TOKEN != ""'
+
+container_scanning:
+  rules:
+    - when: never
+
+container_scanning_backend:
+  extends: container_scanning
+  stage: test
+  variables:
+    CS_IMAGE: "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'
+
+container_scanning_frontend:
+  extends: container_scanning
+  stage: test
+  variables:
+    CS_IMAGE: "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"'

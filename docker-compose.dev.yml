@@ -1,0 +1,36 @@
+services:
+  backend:
+    image: template/backend:dev
+    build: ./backend
+    networks:
+      - template-net
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - AUTH_TOKEN=${AUTH_TOKEN}
+      - DATABASE_URL=${DATABASE_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+    volumes:
+      - ./backend:/app
+    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
+
+  frontend:
+    image: template/frontend:dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    networks:
+      - template-net
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+
+networks:
+  template-net:
+    ipam:
+      config:
+        - subnet: 10.10.1.0/24

@@ -1,0 +1,13 @@
+.git
+.gitignore
+.vscode
+.idea
+*.md
+.gitlab-ci.yml
+docker-compose*.yml
+docker-stack.yml
+Makefile
+frontend/node_modules
+backend/__pycache__
+.env
+.env.example

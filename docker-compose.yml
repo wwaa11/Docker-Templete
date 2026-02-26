@@ -1,0 +1,32 @@
+services:
+  backend:
+    image: template/backend:latest
+    build: ./backend
+    networks:
+      - template-net
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - AUTH_TOKEN=${AUTH_TOKEN}
+      - DATABASE_URL=${DATABASE_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+
+  frontend:
+    image: template/frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - BASE_PATH=${BASE_PATH:-/template-base/}
+    networks:
+      - template-net
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+
+    environment:
+      - BASE_PATH=${BASE_PATH:-/template-base/}
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=8000
+
+networks:
+  template-net:
+    driver: bridge

@@ -1,0 +1,77 @@
+
+version: "3.9"
+
+networks:
+  template-net:
+    driver: overlay    
+    attachable: true
+    driver_opts:
+      encrypted: "true"
+
+services:
+  backend:
+    image: template/backend:latest
+    networks:
+      template-net:
+        aliases:
+          - backend
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      AUTH_TOKEN: ${AUTH_TOKEN}
+      DATABASE_URL: ${DATABASE_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+      placement:
+        constraints:
+           - node.labels.zone == internal
+        preferences:   
+           - spread: node.id    
+        max_replicas_per_node: 2   
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    image: template/frontend:latest
+    networks:
+      - template-net
+    ports:
+      - target: 80
+        published: ${FRONTEND_PORT:-5170}
+        protocol: tcp
+        mode: ingress
+    environment:
+      BACKEND_HOST: ${BACKEND_HOST:-backend}
+      BACKEND_PORT: "8000"
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      placement:
+        constraints:
+           - node.labels.zone == internal
+        preferences:   
+           - spread: node.id    
+        max_replicas_per_node: 2     
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    
