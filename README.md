@@ -75,8 +75,43 @@ unless explicitly requested.
 - **Auth Flow:** Do not modify login/session handling without explicit request.
 - **Environment Variables:** Never hardcode keys or tokens.
 
+## Getting Started
+
+### Prerequisites
+- Docker and Docker Compose
+- Node.js (for local development)
+- Python 3.12+ (for local development)
+
+### Quick Start
+1. **Clone the repository**
+2. **Setup environment variables:**
+   ```bash
+   cp .env.example .env
+   # Update .env with your specific configurations
+   ```
+3. **Start the project in development mode:**
+   ```bash
+   make up
+   ```
+4. **Run migrations:**
+   ```bash
+   make migrate
+   ```
+5. **Access the applications:**
+   - Frontend: [http://localhost:3000](http://localhost:3000)
+   - Backend API: [http://localhost:8000](http://localhost:8000)
+   - Swagger Docs: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+
+## Development Workflow
+Use the provided `Makefile` for common tasks:
+- `make up`: Start development environment
+- `make build`: Rebuild and start environment
+- `make logs-be` / `make logs-fe`: View logs
+- `make migrate`: Apply database migrations
+- `make check`: Run all linting and build checks before committing
+
 ## Definition of Done (Checklist)
 Before marking any task complete, run:
-1. `make check` (Includes typecheck, lint, and tests)
+1. `make check` (Includes build verification, linting, and tests)
 2. Verify empty, loading, and error states for data-driven UI.
 3. Ensure mobile responsiveness.

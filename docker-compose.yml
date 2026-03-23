@@ -6,9 +6,14 @@ services:
       - template-net
     environment:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - AUTH_TOKEN=${AUTH_TOKEN}
+      - AUTH_SECRET_KEY=${AUTH_SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - FRONTEND_URL=${FRONTEND_URL}
+      - FRONTEND_PORT=${FRONTEND_PORT}
+      - BACKEND_HOST=${BACKEND_HOST}
+      - BACKEND_PORT=${BACKEND_PORT}
+      - HIS_API_URL=${HIS_API_URL}
+      - STAFF_API_URL=${STAFF_API_URL}
 
   frontend:
     image: template/frontend:latest
@@ -18,11 +23,11 @@ services:
     networks:
       - template-net
     ports:
-      - "${FRONTEND_PORT:-5173}:80"
+      - "${FRONTEND_PORT:-3000}:3000"
 
     environment:
-      - BACKEND_HOST=backend
-      - BACKEND_PORT=8000
+      - BACKEND_HOST=${BACKEND_HOST}
+      - BACKEND_PORT=${BACKEND_PORT}
 
 networks:
   template-net:

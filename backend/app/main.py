@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from .core.config import settings
+from app.core.config import settings
 import os
-from app.routes import main
+from app.api import endpoints, auth
 
 app = FastAPI(
-    title="Template API",
+    title="Healthcare Template API",
+    description="Backend API for the healthcare website template.",
+    version="0.1.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json"
@@ -24,5 +26,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(main.router)
+app.include_router(endpoints.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
 

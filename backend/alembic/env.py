@@ -6,8 +6,11 @@ from alembic import context
 
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
-target_metadata = None 
 from app.core.config import settings
+from app.core.db.base import Base
+from app.models.user import User  # Import all models here for Alembic
+
+target_metadata = Base.metadata
 
 config = context.config
 

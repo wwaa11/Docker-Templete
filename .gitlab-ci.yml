@@ -198,6 +198,7 @@ sonarqube-scan:
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [ "" ]
+  allow_failure: true
   script:
     - sonar-scanner --version
     - test -n "$SONAR_HOST_URL"

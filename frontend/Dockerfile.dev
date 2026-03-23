@@ -1,14 +1,16 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
-ENV PATH=/app/node_modules/.bin:$PATH
-COPY --chown=appuser:appgroup package*.json ./
-RUN npm ci
-COPY --chown=appuser:appgroup . .
-RUN mkdir -p /tmp/vite && \
-    chown -R appuser:appgroup /app /tmp/vite && \
-    chmod -R 755 /app/node_modules
-USER appuser
-EXPOSE 5173
-CMD ["npm", "run", "dev", "--", "--host"]
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["npm", "run", "dev"]

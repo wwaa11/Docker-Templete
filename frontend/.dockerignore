@@ -1,8 +1,11 @@
 node_modules
-dist
+.next
+out
 build
 .eslintcache
 *.log
 Dockerfile
 Dockerfile.dev
 .dockerignore
+.git
+.gitignore
