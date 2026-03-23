@@ -3,7 +3,7 @@ services:
     image: template/backend:dev
     build: ./backend
     networks:
-      - template-net
+      - local-dev-net
     environment:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - AUTH_SECRET_KEY=${AUTH_SECRET_KEY}
@@ -24,7 +24,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     networks:
-      - template-net
+      - local-dev-net
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     volumes:
@@ -37,7 +37,7 @@ services:
       - BACKEND_PORT=${BACKEND_PORT}
 
 networks:
-  template-net:
+  local-dev-net:
     ipam:
       config:
-        - subnet: 10.10.2.0/24
+        - subnet: 10.10.1.0/24
