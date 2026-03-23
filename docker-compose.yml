@@ -15,15 +15,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        - BASE_PATH=${BASE_PATH:-/template-base/}
     networks:
       - template-net
     ports:
       - "${FRONTEND_PORT:-5173}:80"
 
     environment:
-      - BASE_PATH=${BASE_PATH:-/template-base/}
       - BACKEND_HOST=backend
       - BACKEND_PORT=8000
 

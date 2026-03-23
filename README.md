@@ -1,43 +1,82 @@
-# Project Template
+## Project Overview
+- Healthcare website
+- Primary goal: Secure, performant, and reliable healthcare services.
 
-This is a full-stack template using Python (FastAPI), React (TypeScript), and Alembic, with Docker support.
+Optimize for:
+- Mobile-first responsive design
+- Accessibility (WCAG 2.1 AA)
 
-## Project Structure
+Avoid over-engineering. Prefer clarity over cleverness.
 
-- `backend/`: FastAPI application and Alembic migrations.
-- `frontend/`: React application with Vite.
-- `docker-compose.yml`: Standard Docker Compose for production-like local setup.
-- `docker-compose.dev.yml`: Development Docker Compose with hot-reloading.
-- `docker-stack.yml`: Docker Swarm stack definition.
-- `docker-ci.yml`: CI/CD pipeline configuration.
+## Tech Stack
+- **Frontend:** Next.js 15 with App Router (React 19)
+- **Language:** TypeScript (strict mode)
+- **Styling:** Tailwind CSS + daisyUI
+- **Backend:** Python + FastAPI
+- **Database:** Postgres (via SQLModel/SQLAlchemy)
+- **Testing:** Vitest (Frontend), Pytest (Backend)
 
-## Support for Base Path
+Do not introduce:
+- Redux or MobX (Use React state or Context)
+- styled-components or Emotion
+- Material UI or Ant Design
+unless explicitly requested.
 
-The project is configured to support being hosted under a sub-path (e.g., `/template-base/`).
+## Architecture
+- `frontend/`
+    - `app/`                  → routes and server components
+    - `components/ui/`        → reusable design-system primitives (daisyUI)
+    - `components/product/`   → product-specific UI (cards, gallery, filters)
+    - `lib/`                  → shared utilities and API helpers (backend-client)
+    - `types/`                → shared TypeScript interfaces
+- `backend/`
+    - `app/api/`              → Endpoints (routers)
+    - `app/core/`             → Config, security, database setup
+    - `app/models/`           → SQLModel definitions
+    - `app/schemas/`          → Pydantic models (Data validation)
+    - `app/services/`         → Complex business logic
+    - `tests/`                → Pytest suite
 
-### How to change the Base Path
+## Coding Conventions
+### Frontend (TypeScript/Next.js)
+- TypeScript strict mode — avoid `any` at all times.
+- Named exports only (except Next.js route files).
+- `async/await` over chained `.then()`.
+- Keep components under 200 lines unless justified.
+- Descriptive variable names — no abbreviations (`qty` → `quantity`).
+- No dead code, no commented-out blocks.
+- Extract repeated logic into hooks under `features/{name}/hooks/`.
 
-1. Update `BASE_PATH` in `.env`.
-2. The `backend` uses `BASE_PATH` from environment variables for its API documentation URLs.
-3. The `frontend/vite.config.ts` uses `BASE_PATH` from the environment or `.env` to set the build base and proxy paths.
-4. The `frontend/src/App.tsx` handles `BASE_PATH` dynamically.
-5. The `frontend/default.conf.template` uses `${BASE_PATH}` to configure Nginx.
-6. The `frontend/Dockerfile` build process takes `BASE_PATH` as a build argument to place the static files in the correct directory.
-7. Both `docker-compose.yml` and `docker-compose.dev.yml` pass `BASE_PATH` to the services.
+### Backend (Python/FastAPI)
+- Use **Pydantic v2** for validation and serialization.
+- Follow **PEP 8** (use `ruff` or `black` for formatting).
+- Strict type hints for all function signatures.
+- Use `async def` for I/O operations (DB, APIs).
+- Dependency Injection: Use `Depends()` for sessions and auth.
 
-## Getting Started
+## Backend Integration Rules
+- **Single Source of Truth:** FastAPI handles heavy processing and healthcare logic; Next.js handles UI and Auth sessions.
+- **Contract-First:** Update Pydantic schemas first, then update TypeScript interfaces in `frontend/types/`.
+- **API Documentation:** Always maintain Swagger docs at `/docs`.
+- **CORS:** Strictly allow only the Next.js origin.
 
-### Development
+## UI & Design System
+- 8px spacing rhythm (p-2, p-4, p-8).
+- Tailwind utilities only — no custom CSS files.
+- Use `next/image` with proper aspect ratios for all images.
+- Every interactive element must have: `hover`, `focus`, and `disabled` states.
+- CTA buttons: Solid primary only — no ghost buttons for main actions.
 
-```bash
-docker-compose -f docker-compose.dev.yml up --build
-```
+## Healthcare Security & Safety
+- **Pervasive Validation:** Use Pydantic to strictly validate all incoming healthcare data.
+- **No Sensitive Data in Logs:** Scrub PII (Personally Identifiable Information) before logging.
+- **No Tracebacks:** Never expose Python stack traces in production API responses.
+- **Data Minimization:** Fetch only necessary fields from the backend.
+- **Auth Flow:** Do not modify login/session handling without explicit request.
+- **Environment Variables:** Never hardcode keys or tokens.
 
-The frontend will be available at `http://localhost:5173` (or the configured base path if proxied).
-The backend API will be available at `http://localhost:8000`.
-
-### Production
-
-```bash
-docker-compose up --build
-```
+## Definition of Done (Checklist)
+Before marking any task complete, run:
+1. `make check` (Includes typecheck, lint, and tests)
+2. Verify empty, loading, and error states for data-driven UI.
+3. Ensure mobile responsiveness.

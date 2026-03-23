@@ -13,8 +13,7 @@ include:
 
 stages:
   - validate
-  - build-frontend
-  - build-backend
+  - build
   - test
   - sonarqube
 
@@ -170,7 +169,7 @@ validate-stack-compose:
       fi
 
 build-frontend:
-  stage: build-frontend
+  stage: build
   extends: .build-template
   variables:
     DOCKER_DIR: "frontend"
@@ -178,7 +177,7 @@ build-frontend:
   <<: *default_rules
 
 build-backend:
-  stage: build-backend
+  stage: build
   extends: .build-template
   variables:
     DOCKER_DIR: "backend"

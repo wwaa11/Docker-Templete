@@ -4,13 +4,10 @@ import sys
 from sqlalchemy import engine_from_config, pool, create_engine
 from alembic import context
 
-# Add current directory to path
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import Base from app.db (you'll need to create this)
-# from app.db.base_class import Base
-# target_metadata = Base.metadata
-target_metadata = None # Placeholder
+target_metadata = None 
+from app.core.config import settings
 
 config = context.config
 
@@ -18,7 +15,8 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 def get_url():
-    return os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    return settings.DATABASE_URL
+ 
 
 def run_migrations_offline() -> None:
     url = get_url()

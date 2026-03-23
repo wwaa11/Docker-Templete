@@ -6,19 +6,20 @@ server {
     resolver 127.0.0.11 ipv6=off valid=10s;
     set $backend_host "${BACKEND_HOST}";
 
-    location ${BASE_PATH} {
-        try_files $uri $uri/ ${BASE_PATH}index.html;
+    location /need_to_change {
+        alias /usr/share/nginx/html/need_to_change;
+        try_files $uri $uri/ /need_to_change/index.html;
     }
 
     # API Proxy - Handle both prefixed and non-prefixed
-    location ~ ^(${BASE_PATH}|/)api/ {
+    location ~ ^/(need_to_change/)?api/ {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         
         # Strip prefix if it exists and pass to backend
-        rewrite ^(${BASE_PATH}|/)?api/(.*)$ /api/$2 break;
+        rewrite ^/(need_to_change/)?api/(.*)$ /api/$2 break;
         
         proxy_pass http://$backend_host:${BACKEND_PORT};
     }

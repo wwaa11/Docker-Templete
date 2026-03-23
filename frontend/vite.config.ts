@@ -1,36 +1,27 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
 
-export default defineConfig(({ command, mode }) => {
-    // Load env file from root directory
-    const env = loadEnv(mode, path.resolve(__dirname, '..'), '')
-    const basePath = process.env.BASE_PATH || env.BASE_PATH || '/template-base/'
-
-    return {
-        base: command === 'build' ? basePath : '/',
-        plugins: [react()],
-        define: {
-            'import.meta.env.VITE_BASE_PATH': JSON.stringify(basePath),
+export default defineConfig(({ command }) => ({
+    base: command === 'build' ? '/need_to_change/' : '/',
+    plugins: [react()],
+    server: {
+        host: true,
+        port: 5173,
+        allowedHosts: true,
+        watch: {
+            usePolling: true,
+            interval: 100,
         },
-        server: {
-            host: true,
-            port: 5173,
-            watch: {
-                usePolling: true,
-                interval: 100,
+        proxy: {
+            '/need_to_change/api': {
+                target: 'http://backend:8000',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/need_to_change\/api/, '/api'),
             },
-            proxy: {
-                [`${basePath}api`]: {
-                    target: 'http://backend:8000',
-                    changeOrigin: true,
-                    rewrite: (path) => path.replace(new RegExp(`^${basePath.replace(/\//g, '\\/')}api`), '/api'),
-                },
-                '/api': {
-                    target: 'http://backend:8000',
-                    changeOrigin: true,
-                },
+            '/api': {
+                target: 'http://backend:8000',
+                changeOrigin: true,
             },
         },
-    }
-})
+    },
+}))
