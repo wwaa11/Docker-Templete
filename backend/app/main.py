@@ -16,7 +16,7 @@ app = FastAPI(
 @app.get("/api/health")
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy backend"}
 
 app.add_middleware(
     CORSMiddleware,

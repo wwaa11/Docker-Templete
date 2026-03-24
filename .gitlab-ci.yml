@@ -211,7 +211,7 @@ sonarqube-scan:
         -Dsonar.projectKey="$CI_PROJECT_PATH_SLUG" \
         -Dsonar.projectName="$CI_PROJECT_PATH" \
         -Dsonar.projectVersion="$CI_COMMIT_SHORT_SHA" \
-        -Dsonar.sources="backend/app,frontend/src" \
+        -Dsonar.sources="backend/app,frontend/app" \
         -Dsonar.exclusions="**/node_modules/**,**/venv/**,**/dist/**,**/*.spec.ts,**/*.test.ts" \
         -Dsonar.python.version="3.11" \
         -Dsonar.qualitygate.wait=true
