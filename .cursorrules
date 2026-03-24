@@ -1,5 +1,5 @@
 ## Project Overview
-- **Project:** Healthcare Website (Patient Management, Records, Appointments)
+- **Project:** Healthcare Website
 - **Goal:** Secure, HIPAA-compliant (standards), and highly reliable system.
 - **Optimization:** Responsive design, Accessibility (WCAG 2.1 AA).
 
@@ -32,7 +32,6 @@ Avoid over-engineering. Prefer clarity over cleverness.
 - **Never manual SQL:** Do not modify database schema directly via SQL. Use Alembic only.
 - **Auto-generate:** Always use `make makemigrations m="description"` for schema changes.
 - **Review:** AI must verify the generated migration script for accuracy (especially unique constraints and non-nullable fields).
-- **Deployment:** `make migrate` must run before the backend starts in any environment.
 
 ## Coding Conventions
 ### Frontend (TS/Next.js)
@@ -65,6 +64,3 @@ Avoid over-engineering. Prefer clarity over cleverness.
 
 ## Definition of Done (Checklist)
 1. Run `make check` and fix all errors.
-2. If DB schema changed, run `make makemigrations`.
-3. Verify mobile-first responsiveness.
-4. Ensure all interactive elements have hover/focus/disabled states.
