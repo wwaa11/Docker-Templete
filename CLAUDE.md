@@ -1,7 +1,7 @@
 ## Project Overview
 - **Project:** Healthcare Website (Patient Management, Records, Appointments)
 - **Goal:** Secure, HIPAA-compliant (standards), and highly reliable system.
-- **Optimization:** Mobile-first responsive design, Accessibility (WCAG 2.1 AA).
+- **Optimization:** Responsive design, Accessibility (WCAG 2.1 AA).
 
 Avoid over-engineering. Prefer clarity over cleverness.
 
@@ -47,6 +47,15 @@ Avoid over-engineering. Prefer clarity over cleverness.
 - Use `async def` for all I/O bound endpoints.
 - Dependency Injection: Use `Depends()` for DB sessions and Auth.
 - Follow PEP 8 (Ruff for linting).
+- Use sqlalchemy ORM for database operations.
+- break down the code into smaller files
+
+## API Design Rules
+- **No SQL in Endpoints:** Never write raw SQL queries in endpoint files.
+- **Use ORM:** Always use SQLAlchemy ORM models for database operations.
+- **No String Concatenation:** Do not build SQL queries using f-strings or string concatenation.
+- **Use Parameters:** Always use parameter binding for dynamic values.
+- **Helper Functions:** Move complex queries to service layer or use ORM query methods.
 
 ## Healthcare Security & Safety
 - **PII Scrubbing:** Never log Personally Identifiable Information (Names, Birthdates, SSN).

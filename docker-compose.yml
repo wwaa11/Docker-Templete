@@ -23,7 +23,7 @@ services:
     networks:
       - template-net
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-80}:80"
 
     environment:
       - BACKEND_HOST=${BACKEND_HOST}
