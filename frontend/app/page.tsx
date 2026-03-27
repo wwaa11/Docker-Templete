@@ -14,7 +14,7 @@ export default function Home() {
 
       {/* Footer / Copyright */}
       <div className="absolute bottom-6 text-center text-xs opacity-40 uppercase tracking-widest font-bold">
-        © 2026 Healthcare Management System • Secure Portal
+        © {new Date().getFullYear()} Healthcare Management System • Secure Portal
       </div>
     </main>
   );
