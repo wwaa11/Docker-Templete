@@ -20,6 +20,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+          BASE_PATH: /template
     networks:
       - template-net
     ports:

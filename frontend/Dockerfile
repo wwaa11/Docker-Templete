@@ -10,6 +10,8 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG BASE_PATH=/template
+ENV BASE_PATH=${BASE_PATH}
 RUN npm run build
 
 FROM base AS runner

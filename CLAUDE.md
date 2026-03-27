@@ -61,6 +61,3 @@ Avoid over-engineering. Prefer clarity over cleverness.
 - **Pervasive Validation:** Every input must be validated by Pydantic before processing.
 - **Secure Error Handling:** Return generic error IDs to users; log detailed errors internally. No stack traces in production.
 - **Auth Flow:** Do not modify login/session/JWT handling without explicit approval.
-
-## Definition of Done (Checklist)
-1. Run `make check` and fix all errors.
