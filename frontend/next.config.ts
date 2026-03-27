@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
     const backendUrl =
       host && port
         ? `http://${host}:${port}`
-        : (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://backend:3000').replace(/\/$/, '');
+        : (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://backend:8000').replace(/\/$/, '');
     return [
       {
         source: '/api/:path*',
