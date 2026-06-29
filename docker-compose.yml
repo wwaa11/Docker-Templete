@@ -23,6 +23,7 @@ services:
       dockerfile: Dockerfile
       args:
           BASE_PATH: /template
+          NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
     networks:
       - template-net
     ports:
@@ -31,7 +32,13 @@ services:
     environment:
       - BACKEND_HOST=${BACKEND_HOST}
       - BACKEND_PORT=${BACKEND_PORT}
+      - BASE_PATH=/template
+      - FRONTEND_URL=${FRONTEND_URL}
+      - NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
 
 networks:
   template-net:
     driver: bridge
+    # ipam:
+    #   config:
+    #     - subnet: 10.10.1.0/24
