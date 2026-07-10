@@ -17,6 +17,7 @@ services:
       - STAFF_API_URL=${STAFF_API_URL}
     volumes:
       - ./backend:/app
+      # - template-uploads:/app/uploads:rw
     command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
 
   frontend:
@@ -31,6 +32,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      # - template-uploads:/app/uploads:rw
     environment:
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
@@ -42,3 +44,7 @@ networks:
     ipam:
       config:
         - subnet: 10.10.1.0/24
+
+# volumes:
+#   template-uploads:
+#   template-next-cache:

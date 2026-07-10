@@ -12,7 +12,6 @@ Avoid over-engineering. Prefer clarity over cleverness.
 - **Backend:** Python + FastAPI
 - **Database:** Postgres (via SQLModel)
 - **Migration:** Alembic
-- **Testing:** Vitest (Frontend), Pytest (Backend)
 
 ## Architecture
 - `frontend/`
@@ -60,4 +59,3 @@ Avoid over-engineering. Prefer clarity over cleverness.
 - **PII Scrubbing:** Never log Personally Identifiable Information (Names, Birthdates, SSN).
 - **Pervasive Validation:** Every input must be validated by Pydantic before processing.
 - **Secure Error Handling:** Return generic error IDs to users; log detailed errors internally. No stack traces in production.
-- **Auth Flow:** Do not modify login/session/JWT handling without explicit approval.
